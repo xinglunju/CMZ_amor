@@ -54,14 +54,14 @@ def __nh3_init__():
 def __gauss_tau__(axis,p):
 	"""
 	Genenerate a Gaussian model given an axis and a set of parameters.
-	p: [T, Ntot, vlsr, sigmav, J, hyper]
+	p: [T, Ntot, vlsr, sigmav, J, hyper, ff]
 	hyper = 0 -- main
 	hyper =-1 -- left inner satellite
 	hyper = 1 -- right inner satellite
 	hyper =-2 -- left outer satellite
 	hyper = 2 -- right outer satellite
 	"""
-	T = p[0]; Ntot = p[1]; vlsr = p[2]; sigmav = p[3]; J = p[4]; hyper = p[5]
+	T = p[0]; Ntot = p[1]; vlsr = p[2]; sigmav = p[3]; J = p[4]; hyper = p[5]; ff = p[6]
 	K = J
 	gk = 2
 
@@ -70,7 +70,7 @@ def __gauss_tau__(axis,p):
 	elif hyper < 0:
 		vlsr = vlsr - nh3_info['vsep'][J-1][abs(hyper)-1]
 
-	phijk = 1/sqrt(2 * pi) / sigmav * np.exp(-0.5 * (axis - vlsr)**2 / sigmav**2)
+	phijk = 1/sqrt(2 * pi) / (sigmav * 1e5) * np.exp(-0.5 * (axis - vlsr)**2 / sigmav**2)
 	Ri = nh3_info['Ri'][J-1][abs(hyper)]
 	Ajk = (64 * pi**4 * (nh3_info['frest'][J-1] * 1e9)**3 * nh3_info['mu']**2 / 3 / h / c**3) * (K**2) / (J * (J + 1)) * Ri
 	gjk = (2*J + 1) * gk * nh3_info['gI'][J-1]
@@ -81,8 +81,8 @@ def __gauss_tau__(axis,p):
 	Q = 168.7*sqrt(T**3/b0**2/c0)
 	Njk = Ntot * (gjk / Q) * exp(-1.0 * nh3_info['E'][J-1] / T)
 
-	tau = (h * c**3 * Njk * Ajk) / (8 * pi * nh3_info['frest'][J-1]**2 * 1e9 * k_B * T) * phijk
-	f = T * (1 - np.exp(-1.0 * tau))
+	tau = (h * c**3 * Njk * Ajk) / (8 * pi * nh3_info['frest'][J-1]**2 * 1e18 * k_B * T) * phijk
+	f = T * ff * (1 - np.exp(-1.0 * tau))
 
 	return f
 
@@ -95,25 +95,25 @@ def __model_11__(params, vaxis, spec):
 	Ntot = params['Ntot'].value
 	vlsr = params['vlsr'].value
 	sigmav = params['sigmav'].value
+	ff = params['ff'].value
 
 	vlsr22 = vlsr + 150.
 	vlsr33 = vlsr + 266.
 	vlsr44 = vlsr + 336.
 	vlsr55 = vlsr + 406.
 
-	model = __gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,0]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,-1]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,1]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,-2]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,2]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,0]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,-1]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,1]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,-2]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,2]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr33,sigmav,3,0]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr44,sigmav,4,0]) + \
-			__gauss_tau__(vaxis,[T,Ntot,vlsr55,sigmav,5,0])
+	model = __gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,0,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,-1,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,1,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,-2,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr,sigmav,1,2,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,0,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,-1,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,1,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,-2,ff]) + \
+			__gauss_tau__(vaxis,[T,Ntot,vlsr22,sigmav,2,2,ff])
+#			__gauss_tau__(vaxis,[T,Ntot,vlsr44,sigmav,4,0,ff]) + \
+#			__gauss_tau__(vaxis,[T,Ntot,vlsr55,sigmav,5,0,ff])
 
 	return model - spec
 
@@ -140,9 +140,11 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 	cutoff = cutoff
 	vaxis1 = vaxis1[10:-10]
 	vaxis2 = vaxis2[10:-10]
-	spec = np.concatenate((spec1, spec2, spec3, spec4, spec5))
+	#spec = np.concatenate((spec1, spec2, spec3, spec4, spec5))
 	#spec[np.where(spec<=cutoff)] = 0.0
-	vaxis = np.concatenate((vaxis1, vaxis1+150.0, vaxis2+266.0, vaxis2+336.0, vaxis2+406.0))
+	#vaxis = np.concatenate((vaxis1, vaxis1+150.0, vaxis2+266.0, vaxis2+336.0, vaxis2+406.0))
+	spec = np.concatenate((spec1, spec2))
+	vaxis = np.concatenate((vaxis1, vaxis1+150.0))
 
 	unsatisfied = True
 	while unsatisfied:
@@ -223,17 +225,22 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 			else:
 				vlsr1,vlsr2 = 0.0,0.0
 
+		plt.text(0.02, 0.85, r'$V_\mathrm{lsr}=%.1f$ km/s' % vlsr1, transform=ax.transAxes, color='r', fontsize=15)
 
 		# Add 4 parameters
 		params = Parameters()
 		if vlsr1 != -9999:
 			params.add('Ntot', value=1e15, min=0, max=1e20)
-			params.add('T', value=100, min=0, max=1000)
+			#params.add('T', value=100, min=0, max=1000)
+			params.add('T', value=80, vary=False)
 			params.add('sigmav', value=2.0, min=0, max=10.0)
+			#params.add('sigmav', value=1.1, vary=False)
 			if varyv > 0:
 				params.add('vlsr', value=vlsr1, min=vlsr1-varyv*onevpix, max=vlsr1+varyv*onevpix)
 			elif varyv == 0:
 				params.add('vlsr', value=vlsr1, vary=False)
+			#params.add('ff', value=0.1, min=0, max=1.0)
+			params.add('ff', value=0.1, vary=False)
 		# another 4 parameters for the second component
 		if vlsr2 != -9999:
 			params.add('Ntot_c2', value=1e15, min=0, max=1e20)
@@ -264,6 +271,7 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 				plt.text(0.02, 0.80, r'T$_{rot}$=%.1f($\pm$%.1f) K' % (params['T'].value,params['T'].stderr), transform=ax.transAxes, color='r', fontsize=15)
 				plt.text(0.02, 0.75, r'N$_{tot}$=%.2e($\pm$%.2e) cm$^{-2}$' % (params['Ntot'].value,params['Ntot'].stderr), transform=ax.transAxes, color='r', fontsize=15)
 				plt.text(0.02, 0.70, r'FWHM=%.2f($\pm$%.2f) km/s' % (2.355*params['sigmav'].value,2.355*params['sigmav'].stderr), transform=ax.transAxes, color='r', fontsize=15)
+				plt.text(0.02, 0.65, r'Beam filling factor=%.2f($\pm$%.2f)' % (params['ff'].value,params['ff'].stderr), transform=ax.transAxes, color='r', fontsize=15)
 			plt.legend()
 			plt.show()
 			print 'Is the fitting ok? y/n'
