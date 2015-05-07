@@ -236,7 +236,7 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 				params.add('vlsr', value=vlsr1, min=vlsr1-varyv*onevpix, max=vlsr1+varyv*onevpix)
 			elif varyv == 0:
 				params.add('vlsr', value=vlsr1, vary=False)
-			params.add('ff', value=0.5, vary=False)
+			params.add('ff', value=1.0, vary=False)
 		# another 4 parameters for the second component
 		if vlsr2 != -9999:
 			params.add('Ntot_c2', value=1e15, min=0, max=1e20)
