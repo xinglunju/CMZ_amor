@@ -176,7 +176,7 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 					vlsr1 = np.float_(manualv)
 				else:
 					print 'Invalid input...'
-				print 'The Vlsr is %0.2f km/s' % vlsr1
+				print 'The Vlsr is %0.2f km/s' % (vlsr1)
 				raw_input('Press any key to start fitting...')
 				f.canvas.mpl_disconnect(cid)
 				vlsr2 = -9999
@@ -224,19 +224,19 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 			else:
 				vlsr1,vlsr2 = 0.0,0.0
 
-		plt.text(0.02, 0.85, r'$V_\mathrm{lsr}=%.1f$ km/s' % vlsr1, transform=ax.transAxes, color='r', fontsize=15)
+		plt.text(0.02, 0.85, r'$V_\mathrm{lsr}=%.1f$ km/s' % (vlsr1), transform=ax.transAxes, color='r', fontsize=15)
 
 		# Add 4 parameters
 		params = Parameters()
 		if vlsr1 != -9999:
 			params.add('Ntot', value=1e15, min=0, max=1e20)
 			params.add('T', value=100, min=0, max=1000)
-			params.add('sigmav', value=2.0, min=0, max=10.0)
+			params.add('sigmav', value=2., min=0, max=20.)
 			if varyv > 0:
 				params.add('vlsr', value=vlsr1, min=vlsr1-varyv*onevpix, max=vlsr1+varyv*onevpix)
 			elif varyv == 0:
 				params.add('vlsr', value=vlsr1, vary=False)
-			params.add('ff', value=1.0, vary=False)
+			params.add('ff', value=0.5, min=0.1, max=1.0)
 		# another 4 parameters for the second component
 		if vlsr2 != -9999:
 			params.add('Ntot_c2', value=1e15, min=0, max=1e20)
@@ -267,7 +267,7 @@ def fit_spec(spec1, spec2, spec3, spec4, spec5, vaxis1, vaxis2, cutoff=0.009, va
 				plt.text(0.02, 0.80, r'T$_{rot}$=%.1f($\pm$%.1f) K' % (params['T'].value,params['T'].stderr), transform=ax.transAxes, color='r', fontsize=15)
 				plt.text(0.02, 0.75, r'N$_{tot}$=%.2e($\pm$%.2e) cm$^{-2}$' % (params['Ntot'].value,params['Ntot'].stderr), transform=ax.transAxes, color='r', fontsize=15)
 				plt.text(0.02, 0.70, r'FWHM=%.2f($\pm$%.2f) km/s' % (2.355*params['sigmav'].value,2.355*params['sigmav'].stderr), transform=ax.transAxes, color='r', fontsize=15)
-				plt.text(0.02, 0.65, r'Beam filling factor=%.2f($\pm$%.2f)' % (params['ff'].value,params['ff'].stderr), transform=ax.transAxes, color='r', fontsize=15)
+				plt.text(0.02, 0.65, r'Filling factor=%.2f($\pm$%.2f)' % (params['ff'].value,params['ff'].stderr), transform=ax.transAxes, color='r', fontsize=15)
 			plt.legend()
 			plt.show()
 			print 'Is the fitting ok? y/n'
